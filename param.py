@@ -49,3 +49,5 @@ at_masses = {    'H' : 1.00794, 'C' : 12.0107, 'O' : 15.9994, 'N' : 14.0067,
 ## H-Bond atoms
 
 hB_atoms=['O','N','F']
+
+## Further
