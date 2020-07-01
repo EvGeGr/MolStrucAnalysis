@@ -130,7 +130,8 @@ class Mol:
     # determine atoms which form torsion angles from bond graph
     def get_torsions(self):
         self.torsions=None
-        if self.__hbond_graph:
+        if self.__bond_graph:
+            print("XXX")
             at_types, coords = self.__geom[1:3]
             n_atoms = len(at_types)
             self.torsions = []
@@ -153,29 +154,32 @@ class Mol:
                             self.torsions.append([i, j, k, l, t1234])
             self.torsions = sorted(self.torsions, key=lambda torsion: torsion[0])
         else:
-            self.__read_in_geom_err()
+            self.__no_bond_graph_err()
 
     # determine atoms which form out-of-plane angles from bond graph
     def get_outofplanes(self):
         self.outofplanes = None
-        at_types, coords = self.__geom[1:3]
-        n_atoms = len(at_types)
-        self.outofplanes = []
-        for l in range(n_atoms):
-            n_lbonds = len(self.__bond_graph[l])
-            for a in range(n_lbonds):
-                i = self.__bond_graph[l][a]
-                for b in range(n_lbonds):
-                    j = self.__bond_graph[l][b]
-                    if (i == j):
-                        continue
-                    for c in range(b + 1, n_lbonds):
-                        k = self.__bond_graph[l][c]
-                        if (i == k):
+        if self.__bond_graph:
+            at_types, coords = self.__geom[1:3]
+            n_atoms = len(at_types)
+            self.outofplanes = []
+            for l in range(n_atoms):
+                n_lbonds = len(self.__bond_graph[l])
+                for a in range(n_lbonds):
+                    i = self.__bond_graph[l][a]
+                    for b in range(n_lbonds):
+                        j = self.__bond_graph[l][b]
+                        if (i == j):
                             continue
-                        o1234 = functions.get_o1234(coords[i], coords[j], coords[k], coords[l])
-                        self.outofplanes.append([i, j, k, l, o1234])
-        self.outofplanes = sorted(self.outofplanes, key=lambda outofplane: outofplane[0])
+                        for c in range(b + 1, n_lbonds):
+                            k = self.__bond_graph[l][c]
+                            if (i == k):
+                                continue
+                            o1234 = functions.get_o1234(coords[i], coords[j], coords[k], coords[l])
+                            self.outofplanes.append([i, j, k, l, o1234])
+            self.outofplanes = sorted(self.outofplanes, key=lambda outofplane: outofplane[0])
+        else:
+            self.__no_bond_graph_err()
 
 
     #Processing error "no geomtry has been read in"
@@ -197,6 +201,10 @@ class Mol:
         self.__bond_graph=None
         self.__hbond_graph=None
         self.__nhb=0
+        self.bonds=None
+        self.angles=None
+        self.torsions=None
+        self.outofplanes=None
         if self.geom_file:
             self.read_geom(self.geom_file)
         else:
@@ -285,7 +293,7 @@ class Mol:
                 print(' %-15s  %-13s    %6.4f\n' % (nstr, tstr, r12), end='')
             print('\n', end='')
         else:
-            print("Bonds has not yet been determined")
+            print("There are no bonds for this molecule or they have not (yet) been determined")
 
     # print list of bond angles
     def print_angles(self):
@@ -303,11 +311,11 @@ class Mol:
                 print(' %-15s  %-13s   %7.3f\n' % (nstr, tstr, a123), end='')
             print('\n', end='')
         else:
-            print("Angles have not yet been determined")
+            print("There are no angles for this molecule or they have not (yet) been determined")
 
     # print list of torsion angles
     def print_torsions(self):
-        if self.torsions:
+        if self.torsions==0:
             at_types = self.__geom[1]
             n_torsions = len(self.torsions)
             print('%i torsion angle(s) found (degrees)' % (n_torsions))
@@ -321,11 +329,11 @@ class Mol:
                 print(' %-15s  %-13s  %8.3f\n' % (nstr, tstr, t1234), end='')
             print('\n', end='')
         else:
-            print("Torsional angles have not yet been determined")
+            print("There are no dihedrals for this molecule or they have not (yet) been determined")
 
     # print list of out-of-plane angles to screen
     def print_outofplanes(self):
-        if self.outofplanes:
+        if self.outofplanes==None:
             at_types = self.__geom[1]
             n_outofplanes = len(self.outofplanes)
             print('%i out-of-plane angle(s) found (degrees)' % (n_outofplanes))
@@ -339,5 +347,5 @@ class Mol:
                 print(' %-15s  %-13s  %8.3f\n' % (nstr, tstr, o1234), end='')
             print('\n', end='')
         else:
-            print("Out-of-plane angles have not yet been determined")
+            print("There are no out-of-plane angles for this molecule or they have not (yet) been determined")
 ## Further
