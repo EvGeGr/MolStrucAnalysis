@@ -1,4 +1,4 @@
-import math, const
+import math, numpy, const
 
 ## MATH FUNCTIONS ##
 
@@ -50,7 +50,7 @@ def get_a123(coords1, coords2, coords3):
     u21 = get_u12(coords2, coords1)
     u23 = get_u12(coords2, coords3)
     dp2123 = get_udp(u21, u23)
-    a123 = rad2deg * math.acos(dp2123)
+    a123 = const.rad2deg * math.acos(dp2123)
     return a123
 
 # calculate torsion angle between four 3-d cartesian coordinates
@@ -63,7 +63,7 @@ def get_t1234(coords1, coords2, coords3, coords4):
     u32c34 = get_ucp(u32, u34)
     dp = get_udp(u21c23, u32c34)
     sign = 2 * float(get_udp(u21c23, u34) < 0) - 1
-    t1234 = rad2deg * sign * math.acos(dp)
+    t1234 = const.rad2deg * sign * math.acos(dp)
     return t1234
 
 # calculate out-of-plane (improper torsion) angle between four 3-d cartesian coordinates
@@ -73,7 +73,7 @@ def get_o1234(coords1, coords2, coords3, coords4):
     u41 = get_u12(coords4, coords1)
     u42c43 = get_ucp(u42, u43)
     dp = get_udp(u42c43, u41)
-    o1234 = rad2deg * math.asin(dp)
+    o1234 = const.rad2deg * math.asin(dp)
     return o1234
 
 # translate coordinates by a defined vector and scale factor
@@ -92,7 +92,7 @@ def get_com(geom):
     com = [0.0 for p in range(3)]
     mass = 0.0
     for i in range(n_atoms):
-        at_mass = at_masses[at_types[i]]
+        at_mass = const.at_masses[at_types[i]]
         mass += at_mass
         for j in range(3):
             com[j] += at_mass * coords[i][j]
@@ -106,7 +106,7 @@ def get_moi(geom):
     n_atoms = len(at_types)
     moi = [[0.0 for q in range(3)] for p in range(3)]
     for i in range(n_atoms):
-        at_mass = at_masses[at_types[i]]
+        at_mass = const.at_masses[at_types[i]]
         for p in range(3):
             for q in range(3):
                 if (p == q):
@@ -127,13 +127,13 @@ def get_prinmom(moi):
 def get_rotfreq(prinmom):
     freqcm1, freqmhz = [], []
     for p in range(3):
-        iszero = are_same(prinmom[p], 0.0, mom_thresh, mom_min)
-        degen = (p>0 and are_same(prinmom[p-1], prinmom[p], mom_thresh, mom_min))
+        iszero = are_same(prinmom[p], 0.0, const.mom_thresh, const.mom_min)
+        degen = (p>0 and are_same(prinmom[p-1], prinmom[p], const.mom_thresh, const.mom_min))
         if (iszero or degen):
             continue
-        mhz = h / (8 * math.pi**2 * prinmom[p])
-        mhz *= (10**10)**2 * na * 10**3 * 10**(-6)
-        cm1 = mhz / c * 10**6
+        mhz = const.h / (8 * math.pi**2 * prinmom[p])
+        mhz *= (10**10)**2 * const.na * 10**3 * 10**(-6)
+        cm1 = mhz / const.c * 10**6
         freqmhz.append(mhz)
         freqcm1.append(cm1)
     return freqmhz, freqcm1
@@ -167,10 +167,10 @@ def get_bond_graph(geom):
     n_atoms = len(at_types)
     bond_graph = [[] for i in range(n_atoms)]
     for i in range(n_atoms):
-        covrad1 = cov_rads[at_types[i]]
+        covrad1 = const.cov_rads[at_types[i]]
         for j in range(i+1, n_atoms):
-            covrad2 = cov_rads[at_types[j]]
-            thresh = bond_thresh * (covrad1 + covrad2)
+            covrad2 = const.cov_rads[at_types[j]]
+            thresh = const.bond_thresh * (covrad1 + covrad2)
             r12 = get_r12(coords[i], coords[j])
             if (r12 < thresh):
                 bond_graph[i].append(j)
@@ -178,10 +178,10 @@ def get_bond_graph(geom):
 # check for H-bonds
     nhb = 0
     for i in range(n_atoms):
-        if at_types[i] in hB_atoms:
+        if at_types[i] in const.hB_atoms:
             for j in filter(lambda x: x != i, range(n_atoms)):
                 if at_types[j] == 'H' and i not in bond_graph[j]:
-                    if any(hB_atom in list(at_types[x] for x in bond_graph[j]) for hB_atom in hB_atoms):
+                    if any(hB_atom in list(at_types[x] for x in bond_graph[j]) for hB_atom in const.hB_atoms):
                         r12 = get_r12(coords[i], coords[j])
                         if r12 < 2.2:
                             nhb += 1
@@ -267,11 +267,11 @@ def get_outofplanes(geom, bond_graph):
 
 # determine molecule type based on principal moments of inertia
 def get_moltype(geom, pm):
-    same12  = are_same(pm[0], pm[1], mom_thresh, mom_min)
-    same13  = are_same(pm[0], pm[2], mom_thresh, mom_min)
-    same23  = are_same(pm[1], pm[2], mom_thresh, mom_min)
-    onezero = are_same(pm[0], 0.0,   mom_thresh, mom_min)
-    allzero = are_same(pm[2], 0.0,   mom_thresh, mom_min)
+    same12  = are_same(pm[0], pm[1], const.mom_thresh, const.mom_min)
+    same13  = are_same(pm[0], pm[2], const.mom_thresh, const.mom_min)
+    same23  = are_same(pm[1], pm[2], const.mom_thresh, const.mom_min)
+    onezero = are_same(pm[0], 0.0,   const.mom_thresh, const.mom_min)
+    allzero = are_same(pm[2], 0.0,   const.mom_thresh, const.mom_min)
     if (allzero):
         moltype = 'monatomic'
     elif (onezero):
