@@ -51,6 +51,7 @@ class Mol:
                               "x, y, z coordinates are expected for each atom after the atom symbol!\n"
                               "A coordinate is assigned to '0' if you see this error")
             self.__geom = [comment, at_types, coords]
+            print("Cartesian coordinates have been read in ...")
 
     # build graph of covalently and hydrogen bonded atoms (bond_graph)
     def get_bond_graph(self):
@@ -89,27 +90,42 @@ class Mol:
 
     # determine atoms which are covalently and hydrogen bonded from bond graph
     def get_bonds(self):
-        self.bonds=None
+        #self.bonds=None
         if self.__bond_graph:
+
+            self.bonds = []
+            self.bond_names=[]
+            self.bond_values=[]
+
             at_types, coords = self.__geom[1:3]
             n_atoms = len(at_types)
-            self.bonds = []
+
             for i in range(n_atoms):
                 for a in range(len(self.__bond_graph[i])):
                     j = self.__bond_graph[i][a]
                     if (i < j):
                         r12 = functions.get_r12(coords[i], coords[j])
                         self.bonds.append([i, j, r12])
+
+            for b in self.bonds:
+                self.bond_names.append('%i-%i' % (b[0] + 1, b[1] + 1))
+                self.bond_values.append(b[2])
+
         else:
             self.read_in_geom_err()
 
     # determine atoms which form a bond angle from bond graph
     def get_angles(self):
-        self.angles=None
+        #self.angles=None
         if self.__bond_graph:
+
+            self.angles = []
+            self.angle_names=[]
+            self.angle_values=[]
+
             at_types, coords = self.__geom[1:3]
             n_atoms = len(at_types)
-            self.angles = []
+
             for j in range(n_atoms):
                 n_jbonds = len(self.__bond_graph[j])
                 for a in range(n_jbonds):
@@ -119,8 +135,7 @@ class Mol:
                         a123 = functions.get_a123(coords[i], coords[j], coords[k])
                         self.angles.append([i, j, k, a123])
             self.angles = sorted(self.angles, key=lambda angle: angle[0])
-            self.angle_names=[]
-            self.angle_values=[]
+
             for a in self.angles:
                 self.angle_names.append('%i-%i-%i' % (a[0] + 1, a[1] + 1, a[2] + 1))
                 self.angle_values.append(a[3])
@@ -129,12 +144,16 @@ class Mol:
 
     # determine atoms which form torsion angles from bond graph
     def get_torsions(self):
-        self.torsions=None
+        #self.torsions=None
         if self.__bond_graph:
-            print("XXX")
+
+            self.torsions = []
+            self.torsion_names = []
+            self.torsion_values = []
+
             at_types, coords = self.__geom[1:3]
             n_atoms = len(at_types)
-            self.torsions = []
+
             for j in range(n_atoms):
                 n_jbonds = len(self.__bond_graph[j])
                 for a in range(n_jbonds):
@@ -153,13 +172,21 @@ class Mol:
                             t1234 = functions.get_t1234(coords[i], coords[j], coords[k], coords[l])
                             self.torsions.append([i, j, k, l, t1234])
             self.torsions = sorted(self.torsions, key=lambda torsion: torsion[0])
+            for t in self.torsions:
+                self.torsion_names.append('%i-%i-%i-%i' % (t[0] + 1, t[1] + 1, t[2] + 1, t[3]+1))
+                self.torsion_values.append(t[4])
         else:
             self.__no_bond_graph_err()
 
     # determine atoms which form out-of-plane angles from bond graph
     def get_outofplanes(self):
-        self.outofplanes = None
+        #self.outofplanes = None
         if self.__bond_graph:
+
+            self.outofplanes = []
+            self.outofplane_names = []
+            self.outofplane_values = []
+
             at_types, coords = self.__geom[1:3]
             n_atoms = len(at_types)
             self.outofplanes = []
@@ -178,6 +205,9 @@ class Mol:
                             o1234 = functions.get_o1234(coords[i], coords[j], coords[k], coords[l])
                             self.outofplanes.append([i, j, k, l, o1234])
             self.outofplanes = sorted(self.outofplanes, key=lambda outofplane: outofplane[0])
+            for o in self.outofplanes:
+                self.outofplane_names.append('%i-%i-%i-%i' % (o[0] + 1, o[1] + 1, o[2] + 1, o[3]+1))
+                self.outofplane_values.append(o[4])
         else:
             self.__no_bond_graph_err()
 
@@ -194,6 +224,11 @@ class Mol:
     def __no_geom_file(self):
         print("No geometry file has been given!\n\rUse '.read_geom(file)' method to read a geometry from a file!\n")
 
+    # Processing error "no internal coordinates"
+    def __no_internals(self):
+        print("No internal coordinates have been constructed!\n\rUse '.get_bonds()', '.get_angles()', '.get_torsions' "
+              "and '.get_outofplanes' methods to define internal coordinates!\n")
+
     #Initialize class Mol ...
     def __init__(self,geom_file=None):
         self.geom_file=geom_file
@@ -205,6 +240,14 @@ class Mol:
         self.angles=None
         self.torsions=None
         self.outofplanes=None
+        self.bond_names=None
+        self.bond_values=None
+        self.angle_names=None
+        self.angle_values=None
+        self.torsion_names=None
+        self.torsion_values=None
+        self.outofplane_names=None
+        self.outofplane_values=None
         if self.geom_file:
             self.read_geom(self.geom_file)
         else:
@@ -214,13 +257,12 @@ class Mol:
         else:
             self.__no_bond_graph_err()
         if self.__bond_graph:
-            self.get_bond_graph()
             self.get_bonds()
             self.get_angles()
             self.get_torsions()
             self.get_outofplanes()
         else:
-            self.__no_bond_graph_err()
+            self.__no_internals()
 
     # print coordinates
     def print_geom(self):
@@ -293,7 +335,7 @@ class Mol:
                 print(' %-15s  %-13s    %6.4f\n' % (nstr, tstr, r12), end='')
             print('\n', end='')
         else:
-            print("There are no bonds for this molecule or they have not (yet) been determined")
+            print("There are no bonds for this molecule or they have not yet been determined")
 
     # print list of bond angles
     def print_angles(self):
@@ -311,11 +353,11 @@ class Mol:
                 print(' %-15s  %-13s   %7.3f\n' % (nstr, tstr, a123), end='')
             print('\n', end='')
         else:
-            print("There are no angles for this molecule or they have not (yet) been determined")
+            print("There are no angles for this molecule or they have not yet been determined")
 
     # print list of torsion angles
     def print_torsions(self):
-        if self.torsions==0:
+        if self.torsions and len(self.torsions):
             at_types = self.__geom[1]
             n_torsions = len(self.torsions)
             print('%i torsion angle(s) found (degrees)' % (n_torsions))
@@ -329,11 +371,11 @@ class Mol:
                 print(' %-15s  %-13s  %8.3f\n' % (nstr, tstr, t1234), end='')
             print('\n', end='')
         else:
-            print("There are no dihedrals for this molecule or they have not (yet) been determined")
+            print("There are no dihedrals for this molecule or they have not yet been determined")
 
-    # print list of out-of-plane angles to screen
+    # print list of out-of-plane angles
     def print_outofplanes(self):
-        if self.outofplanes==None:
+        if self.outofplanes and len(self.outofplanes):
             at_types = self.__geom[1]
             n_outofplanes = len(self.outofplanes)
             print('%i out-of-plane angle(s) found (degrees)' % (n_outofplanes))
@@ -347,5 +389,5 @@ class Mol:
                 print(' %-15s  %-13s  %8.3f\n' % (nstr, tstr, o1234), end='')
             print('\n', end='')
         else:
-            print("There are no out-of-plane angles for this molecule or they have not (yet) been determined")
+            print("There are no out-of-plane angles for this molecule or they have not yet been determined")
 ## Further
